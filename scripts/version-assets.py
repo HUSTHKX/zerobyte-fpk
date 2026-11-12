@@ -6,6 +6,7 @@
 用法: python3 version-assets.py <.output 目录>
 """
 import glob
+import hashlib
 import os
 import re
 import sys
@@ -23,7 +24,7 @@ def main():
     renames = {}
     for f in glob.glob(os.path.join(ASSET_DIR, "*")):
         base = os.path.basename(f)
-        if "-zh." in base or not base.endswith((".js", ".css")):
+        if not base.endswith((".js", ".css")) or re.search(r"-[0-9a-f]{8}\\.(js|css)$", base):
             continue
         try:
             s = open(f, encoding="utf-8", errors="ignore").read()
@@ -32,7 +33,8 @@ def main():
         if not CJK.search(s):
             continue
         stem, ext = os.path.splitext(base)
-        new = f"{stem}-zh{ext}"
+        h = hashlib.md5(s.encode("utf-8", "ignore")).hexdigest()[:8]
+        new = f"{stem}-{h}{ext}"
         renames[base] = new
         os.rename(f, os.path.join(ASSET_DIR, new))
 

@@ -38,7 +38,7 @@ SHORT_ALLOW = {
 # 看起来像枚举值/状态值的单词不翻，避免破坏逻辑
 BLOCK_SINGLE = {
     "None", "Never", "Unknown", "Enabled", "Disabled", "Current", "Done",
-    "Copied", "Optional", "Required", "Stale", "Healthy", "Success", "Error",
+    "Copied", "Optional", "Required", "Stale", "Success", "Error",
     "Warning", "Cancelled", "Running", "Started", "Finished",
 }
 
@@ -46,7 +46,7 @@ WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9 ,.!?:;'\u2019-]*")
 
 
 def is_label(k: str) -> bool:
-    if any(t in k for t in ("{{", "${", "<", ">", "%s", "%d")):
+    if any(t in k for t in ("${", "<", ">", "%s")):
         return False
     if len(k) >= 8 and " " in k:
         return True
