@@ -50,6 +50,11 @@ for ln in lines:
 open(p, "w", encoding="utf-8").write("\n".join(out))
 PY
 
+# 5.5 规范化权限（飞牛要求 755/644 + root 属主）
+find "$WORK/fpk" -type d -exec chmod 755 {} +
+find "$WORK/fpk" -type f -exec chmod 644 {} +
+chmod 755 "$WORK/fpk/cmd/"* "$WORK/fpk/wizard/"* 2>/dev/null || true
+
 # 6. 打包
 FINAL="$OUTDIR/zerobyte-x86-${VER}.fpk"
 tar czf "$FINAL" -C "$WORK/fpk" $(ls -A "$WORK/fpk")
