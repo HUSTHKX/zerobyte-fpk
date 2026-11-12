@@ -22,10 +22,17 @@ cp -a "$REPO_ROOT/fpk/." "$WORK/fpk/"
 # 2. 负载
 cp -a "$ROOTFS/app" "$WORK/payload/app"
 mkdir -p "$WORK/payload/bin"
-for b in bun rclone restic shoutrrr; do
+# 运行时工具来自官方镜像；bun 例外——镜像里是 musl 版，无法在 Debian 上运行
+for b in rclone restic shoutrrr; do
     cp "$ROOTFS/usr/local/bin/$b" "$WORK/payload/bin/$b"
     chmod +x "$WORK/payload/bin/$b"
 done
+
+# glibc 版 bun
+curl -sL -o /tmp/bun.zip https://github.com/oven-sh/bun/releases/latest/download/bun-linux-x64.zip
+unzip -q -o /tmp/bun.zip -d /tmp/bunx
+cp /tmp/bunx/bun-linux-x64/bun "$WORK/payload/bin/bun"
+chmod +x "$WORK/payload/bin/bun"
 [ -d "$REPO_ROOT/fpk/ui" ] && cp -a "$REPO_ROOT/fpk/ui" "$WORK/payload/ui"
 
 # 3. 汉化
