@@ -1,0 +1,10 @@
+#!/bin/bash
+
+### 配置变更后执行:重启服务生效
+
+MAIN="${TRIM_APPDEST}/../cmd/main"
+if [ -x "${MAIN}" ]; then
+  "${MAIN}" restart
+fi
+
+exit 0

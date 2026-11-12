@@ -1,0 +1,227 @@
+#!/bin/bash
+# Zerobyte 生命周期控制脚本
+# 处理 start / stop / status,由飞牛 fnOS 应用中心调用
+#
+# 关键设计:
+#   - bun 与 restic 二进制内置于包内 (app/bin/),不依赖系统 PATH
+#   - APP_SECRET 持久化在 @appdata,保证重启后会话与加密数据不失效
+#   - 数据库/仓库/缓存全部落在 @appdata 下的应用数据目录
+#   - 迁移文件随包分发 (app/dist/migrations),避免生产模式硬编码容器路径
+
+set -u
+
+APPNAME="${TRIM_APPNAME:-zerobyte}"
+APPDEST="${TRIM_APPDEST:-/var/apps/zerobyte/target}"
+PKGVAR="${TRIM_PKGVAR:-/var/apps/zerobyte/var}"
+PKGETC="${TRIM_PKGETC:-/var/apps/zerobyte/etc}"
+
+LOG_FILE="${PKGVAR}/zerobyte.log"
+PID_FILE="${PKGVAR}/app.pid"
+SECRET_FILE="${PKGETC}/app_secret"
+
+DATA_DIR="${PKGVAR}/data"
+DB_PATH="${DATA_DIR}/zerobyte.db"
+REPOS_DIR="${DATA_DIR}/repositories"
+VOLUMES_DIR="${DATA_DIR}/volumes"
+CACHE_DIR="${DATA_DIR}/restic-cache"
+# rclone 配置放在应用数据目录(专用用户可读写)。
+# Zerobyte 通过检查 rclone.conf 是否存在来决定是否开放 rclone 后端选项
+# (app/server/core/capabilities.ts),默认的 /root/.config/rclone 对应用用户不可达。
+RCLONE_CONF_DIR="${DATA_DIR}/rclone"
+
+BUN_BIN="${APPDEST}/bin/bun"
+RESTIC_BIN="${APPDEST}/bin/restic"
+RCLONE_BIN="${APPDEST}/bin/rclone"
+SERVER_ENTRY="${APPDEST}/dist/server/index.mjs"
+MIGRATIONS_DIR="${APPDEST}/dist/migrations"
+ICON_DIR="${APPDEST}/dist/public/images"
+
+PORT="2255"
+
+log_msg() {
+  echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >>"${LOG_FILE}" 2>/dev/null || true
+}
+
+ensure_dirs() {
+  mkdir -p "${DATA_DIR}" "${REPOS_DIR}" "${VOLUMES_DIR}" "${CACHE_DIR}" "${RCLONE_CONF_DIR}" 2>>"${LOG_FILE}" || {
+    echo "无法创建数据目录 ${DATA_DIR}" >"${TRIM_TEMP_LOGFILE:-/dev/null}" 2>/dev/null
+    return 1
+  }
+  return 0
+}
+
+# APP_SECRET 必须跨重启稳定,否则已创建的会话和加密数据全部失效。
+# 首次启动生成随机密钥,保存在配置目录;之后每次启动复用。
+ensure_secret() {
+  if [ -s "${SECRET_FILE}" ]; then
+    return 0
+  fi
+  local secret
+  secret="$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+  if [ -z "${secret}" ] || [ "${#secret}" -lt 32 ]; then
+    echo "无法生成 APP_SECRET" >"${TRIM_TEMP_LOGFILE:-/dev/null}" 2>/dev/null
+    return 1
+  fi
+  umask 077
+  printf '%s' "${secret}" >"${SECRET_FILE}" || return 1
+  umask 022
+  return 0
+}
+
+check_process() {
+  local pid="$1"
+  [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null
+}
+
+start_process() {
+  if status; then
+    return 0
+  fi
+
+  for f in "${BUN_BIN}" "${SERVER_ENTRY}"; do
+    if [ ! -e "${f}" ]; then
+      echo "缺少运行文件: ${f}" >"${TRIM_TEMP_LOGFILE:-/dev/null}" 2>/dev/null
+      log_msg "ERROR: missing file ${f}"
+      return 1
+    fi
+  done
+
+  ensure_dirs || return 1
+  ensure_secret || return 1
+
+  local secret
+  secret="$(cat "${SECRET_FILE}" 2>/dev/null)"
+  if [ -z "${secret}" ]; then
+    echo "读取 APP_SECRET 失败" >"${TRIM_TEMP_LOGFILE:-/dev/null}" 2>/dev/null
+    return 1
+  fi
+
+  log_msg "Starting zerobyte on port ${PORT} ..."
+
+  cd "${APPDEST}" || return 1
+
+  # restic 由 Zerobyte 通过 PATH 查找 (packages/core/src/restic/commands),
+  # 因此把包内 bin 目录加入 PATH。
+  export PATH="${APPDEST}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+  # Better Auth 只信任 BASE_URL 派生的 origin。用户可能用 NAS IP、localhost
+  # 或主机名访问 2255 端口,把这些常见来源全部加入信任列表。
+  local trusted="http://localhost:${PORT},http://127.0.0.1:${PORT}"
+  local ip
+  while IFS= read -r ip; do
+    [ -n "${ip}" ] && trusted="${trusted},http://${ip}:${PORT}"
+  done < <(ip -4 addr show 2>/dev/null | grep -oE 'inet [0-9.]+' | awk '{print $2}' | grep -v '^127\.')
+  # 用户显式设置的 TRUSTED_ORIGINS 追加在后
+  if [ -n "${TRUSTED_ORIGINS:-}" ]; then
+    trusted="${trusted},${TRUSTED_ORIGINS}"
+  fi
+
+  BASE_URL="http://0.0.0.0:${PORT}" \
+  PORT="${PORT}" \
+  APP_SECRET="${secret}" \
+  NODE_ENV=production \
+  MIGRATIONS_PATH="${MIGRATIONS_DIR}" \
+  ZEROBYTE_DATABASE_URL="${DB_PATH}" \
+  ZEROBYTE_REPOSITORIES_DIR="${REPOS_DIR}" \
+  ZEROBYTE_VOLUMES_DIR="${VOLUMES_DIR}" \
+  RESTIC_CACHE_DIR="${CACHE_DIR}" \
+  RESTIC_COMMAND="${RESTIC_BIN}" \
+  RCLONE_CONFIG_DIR="${RCLONE_CONF_DIR}" \
+  TRUSTED_ORIGINS="${trusted}" \
+    "${BUN_BIN}" "${SERVER_ENTRY}" >>"${LOG_FILE}" 2>&1 &
+
+  local pid=$!
+  printf "%s" "${pid}" >"${PID_FILE}"
+  log_msg "Started with PID ${pid}"
+
+  # 等待端口就绪(最多 30 秒),确认启动成功
+  local count=0
+  while [ ${count} -lt 30 ]; do
+    if ! check_process "${pid}"; then
+      echo "Zerobyte 进程启动后异常退出,请查看日志 ${LOG_FILE}" >"${TRIM_TEMP_LOGFILE:-/dev/null}" 2>/dev/null
+      log_msg "ERROR: process died during startup"
+      rm -f "${PID_FILE}"
+      return 1
+    fi
+    if curl -s -o /dev/null -m 2 "http://127.0.0.1:${PORT}/" 2>/dev/null; then
+      log_msg "Port ${PORT} is up"
+      return 0
+    fi
+    sleep 1
+    count=$((count + 1))
+  done
+
+  log_msg "WARNING: port ${PORT} not ready after 30s, but process is alive"
+  return 0
+}
+
+stop_process() {
+  log_msg "Stopping zerobyte ..."
+
+  if [ -r "${PID_FILE}" ]; then
+    local pid
+    pid="$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')"
+    if check_process "${pid}"; then
+      log_msg "Sending TERM to PID ${pid}"
+      kill -TERM "${pid}" 2>/dev/null
+
+      local count=0
+      while check_process "${pid}" && [ ${count} -lt 30 ]; do
+        sleep 1
+        count=$((count + 1))
+      done
+
+      if check_process "${pid}"; then
+        log_msg "Sending KILL to PID ${pid}"
+        kill -KILL "${pid}" 2>/dev/null
+        sleep 1
+      fi
+    fi
+    rm -f "${PID_FILE}"
+  fi
+
+  # 兜底:按进程特征匹配残留进程
+  local pattern="dist/server/index.mjs"
+  if command -v pkill >/dev/null 2>&1; then
+    pkill -TERM -f "${pattern}.*zerobyte" 2>/dev/null || true
+  fi
+
+  return 0
+}
+
+status() {
+  if [ -r "${PID_FILE}" ]; then
+    local pid
+    pid="$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')"
+    if check_process "${pid}"; then
+      return 0
+    fi
+    rm -f "${PID_FILE}"
+  fi
+  return 3
+}
+
+case "$1" in
+  start)
+    start_process
+    exit $?
+    ;;
+  stop)
+    stop_process
+    exit $?
+    ;;
+  status)
+    status
+    exit $?
+    ;;
+  restart)
+    stop_process
+    sleep 1
+    start_process
+    exit $?
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|status|restart}" >"${TRIM_TEMP_LOGFILE:-/dev/null}" 2>/dev/null
+    exit 1
+    ;;
+esac

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+### 升级后执行:恢复二进制可执行权限
+
+if [ -n "${TRIM_APPDEST}" ] && [ -d "${TRIM_APPDEST}/bin" ]; then
+  chmod +x "${TRIM_APPDEST}/bin/bun" "${TRIM_APPDEST}/bin/restic" "${TRIM_APPDEST}/bin/rclone" 2>/dev/null
+fi
+
+# 数据目录若缺失则补建(保持幂等)
+PKGVAR="${TRIM_PKGVAR:-/var/apps/zerobyte/var}"
+mkdir -p "${PKGVAR}/data/repositories" \
+  "${PKGVAR}/data/volumes" \
+  "${PKGVAR}/data/restic-cache" \
+  "${PKGVAR}/data/rclone" 2>/dev/null
+
+exit 0

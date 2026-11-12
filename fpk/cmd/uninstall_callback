@@ -1,0 +1,14 @@
+#!/bin/bash
+
+### 卸载后执行:按用户向导选择决定是否清除数据
+### wizard_delete_data=true 时清除 @appdata 下的应用数据
+
+if [ "${wizard_delete_data:-false}" = "true" ]; then
+  PKGVAR="${TRIM_PKGVAR:-/var/apps/zerobyte/var}"
+  if [ -d "${PKGVAR}/data" ]; then
+    rm -rf "${PKGVAR}/data"
+  fi
+  rm -f "${PKGVAR}/zerobyte.log" "${PKGVAR}/app.pid" 2>/dev/null
+fi
+
+exit 0

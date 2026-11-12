@@ -1,0 +1,20 @@
+{
+  ".url": {
+    "zerobyte.main": {
+      "noDisplay": false,
+      "allUsers": true,
+      "fileTypes": [],
+      "control": {
+        "accessPerm": "readonly",
+        "portPerm": "readonly",
+        "pathPerm": "editable"
+      },
+      "protocol": "http",
+      "port": "2255",
+      "title": "Zerobyte 加密备份",
+      "icon": "images/icon_{0}.png",
+      "type": "iframe",
+      "url": "/"
+    }
+  }
+}

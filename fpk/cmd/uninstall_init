@@ -1,0 +1,19 @@
+#!/bin/bash
+
+### 卸载前执行:停止运行中的进程
+
+PATTERN="dist/server/index.mjs"
+
+if [ -r "${TRIM_PKGVAR}/app.pid" ]; then
+  pid="$(head -n 1 "${TRIM_PKGVAR}/app.pid" | tr -d '[:space:]')"
+  if [ -n "${pid}" ] && kill -0 "${pid}" 2>/dev/null; then
+    kill -TERM "${pid}" 2>/dev/null
+    sleep 3
+    kill -0 "${pid}" 2>/dev/null && kill -KILL "${pid}" 2>/dev/null
+  fi
+  rm -f "${TRIM_PKGVAR}/app.pid"
+fi
+
+command -v pkill >/dev/null 2>&1 && pkill -TERM -f "${PATTERN}.*zerobyte" 2>/dev/null
+
+exit 0

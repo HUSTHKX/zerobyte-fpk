@@ -1,0 +1,7 @@
+{
+  "username": "zerobyte",
+  "groupname": "zerobyte",
+  "defaults": {
+    "run-as": "package"
+  }
+}

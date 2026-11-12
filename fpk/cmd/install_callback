@@ -1,0 +1,19 @@
+#!/bin/bash
+
+### 安装后执行:创建数据目录结构
+### 注意:本脚本以 root 运行
+
+PKGVAR="${TRIM_PKGVAR:-/var/apps/zerobyte/var}"
+PKGETC="${TRIM_PKGETC:-/var/apps/zerobyte/etc}"
+
+mkdir -p "${PKGVAR}/data/repositories" \
+  "${PKGVAR}/data/volumes" \
+  "${PKGVAR}/data/restic-cache" \
+  "${PKGVAR}/data/rclone" 2>/dev/null
+
+# bun / restic / rclone 需要可执行权限(从 fpk 解压后权限可能丢失)
+if [ -n "${TRIM_APPDEST}" ] && [ -d "${TRIM_APPDEST}/bin" ]; then
+  chmod +x "${TRIM_APPDEST}/bin/bun" "${TRIM_APPDEST}/bin/restic" "${TRIM_APPDEST}/bin/rclone" 2>/dev/null
+fi
+
+exit 0

@@ -1,0 +1,18 @@
+appname                    = zerobyte
+version                    = 0.42.0
+display_name               = Zerobyte 加密备份
+desc                       = <p><strong>Zerobyte加密备份 - 基于 Restic 的备份自动化工具，github上获7k的Star</strong></p><p>此为B站up主麒麟猪是我制作的原生汉化版，支持多种存储卷(NFS、SMB、WebDAV、SFTP、本地目录)和多种备份仓库后端(S3、Azure、GCS、本地、rclone),提供 Web 界面进行备份调度、管理和监控,所有备份均加密存储。</p><p><br>使用方法:</p><p>1. 安装启动后,浏览器访问 http://NAS的IP:2255</p><p>2. 首次使用请注册管理员账号</p><p>3. 创建存储卷(要备份的目录)和备份仓库,然后配置备份计划</p><p>4. 在应用中心打开桌面图标可直接进入管理界面</p><p><br>注意:默认界面为中文,可在设置中切换回英文。</p>
+platform                   = x86
+source                     = thirdparty
+maintainer                 = zerobyte
+maintainer_url             = https://github.com/nicotsx/zerobyte
+distributor                = qilinzhu
+distributor_url            = https://space.bilibili.com/351478349?spm_id_from=333.1007.0.0
+ctl_stop                   = true
+service_port               = 2255
+checkport                  = true
+desktop_uidir              = ui
+desktop_applaunchname      = zerobyte.main
+disable_authorization_path = false
+changelog                  = 首个飞牛 fpk 打包版本,默认 2255 端口,内置 bun 与 restic 运行时,界面默认中文
+checksum                   = ee62bb345e4ea9b9cc9490c985946e89

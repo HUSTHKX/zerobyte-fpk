@@ -1,0 +1,4 @@
+out/
+rootfs/
+*.fpk
+__pycache__/

@@ -1,0 +1,78 @@
+name: build-fpk
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "指定上游版本（留空取最新）"
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 解析上游版本
+        id: v
+        run: |
+          V="${{ github.event.inputs.version }}"
+          if [ -z "$V" ]; then
+            V=$(curl -s https://api.github.com/repos/nicotsx/zerobyte/releases/latest | jq -r .tag_name)
+            V="${V#v}"
+          fi
+          echo "已解析版本: $V"
+          echo "ver=$V" >> "$GITHUB_OUTPUT"
+
+      - name: 是否已发布
+        id: exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view "v${{ steps.v.outputs.ver }}" >/dev/null 2>&1; then
+            echo "该版本已发布，跳过构建"
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 拉取官方镜像并导出
+        if: steps.exists.outputs.skip == '0'
+        run: |
+          docker pull ghcr.io/nicotsx/zerobyte:latest
+          cid=$(docker create ghcr.io/nicotsx/zerobyte:latest)
+          mkdir -p rootfs
+          docker export "$cid" | tar -xf - -C rootfs
+          docker rm "$cid" >/dev/null
+          ls rootfs/app/.output/server/index.mjs
+
+      - name: 构建 fpk
+        if: steps.exists.outputs.skip == '0'
+        run: bash scripts/build-fpk.sh "${{ steps.v.outputs.ver }}" rootfs out
+
+      - name: 发布 Release
+        if: steps.exists.outputs.skip == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.v.outputs.ver }}" out/*.fpk \
+            --title "v${{ steps.v.outputs.ver }}" \
+            --notes "基于官方镜像 ${{ steps.v.outputs.ver }} 构建，内置 restic/rclone/shoutrrr，中文界面。"
+
+      - name: 更新 moo.json
+        if: steps.exists.outputs.skip == '0'
+        run: |
+          python3 scripts/update-moo.py \
+            --version "${{ steps.v.outputs.ver }}" \
+            --fpk "out/zerobyte-x86-${{ steps.v.outputs.ver }}.fpk" \
+            --repo "${{ github.repository }}"
+          git config user.name "dsh-agent-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add moo.json
+          git diff --cached --quiet || git commit -m "moo: zerobyte ${{ steps.v.outputs.ver }}"
+          git push

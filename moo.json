@@ -1,0 +1,10 @@
+{
+  "schema_version": "moo",
+  "source_info": {
+    "name": "Zerobyte (官方镜像重打包)",
+    "author": "HUSTHKX",
+    "homepage": "https://github.com/HUSTHKX/zerobyte-fpk",
+    "description": "基于 nicotsx/zerobyte 官方镜像构建的 fnOS 原生包，内置 restic/rclone/shoutrrr，界面中文。"
+  },
+  "apps": {}
+}
