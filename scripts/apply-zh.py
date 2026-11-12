@@ -33,6 +33,8 @@ SHORT_ALLOW = {
     "Confirm": "确认", "Search": "搜索", "Settings": "设置", "Login": "登录",
     "Logout": "退出登录", "Next": "下一步", "Previous": "上一步",
     "Warning": "警告", "Success": "成功", "Description": "描述",
+    "Yes": "是", "No": "否", "Enabled": "已启用", "Disabled": "已禁用",
+    "Healthy": "正常",
 }
 
 # 看起来像枚举值/状态值的单词不翻，避免破坏逻辑
@@ -42,7 +44,7 @@ BLOCK_SINGLE = {
     "Warning", "Cancelled", "Running", "Started", "Finished",
 }
 
-WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9 ,.!?:;'\u2019-]*")
+WORD_RE = re.compile(r"[A-Za-z][A-Za-z0-9 ,.!?:;'\u2019\u2026\u2013\u2014\u00b7-]*")
 
 
 def is_label(k: str) -> bool:

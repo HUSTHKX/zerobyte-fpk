@@ -2301,5 +2301,14 @@
  "{{count}} sources": "{{count}} 个数据源",
  " active keys for this organization": " 个有效密钥（本组织）",
  " active keys per user.": " 个有效密钥（每用户上限）。",
- "Limit ": "上限 "
+ "Limit ": "上限 ",
+ " sources": " 个数据源",
+ " source": " 个数据源",
+ " repository": " 个仓库",
+ " destination": " 个通知目标",
+ " Backups": " 个备份计划",
+ " Repositories": " 个仓库",
+ " Volumes": " 个存储卷",
+ "healthy": "正常",
+ "unhealthy": "异常"
 }
