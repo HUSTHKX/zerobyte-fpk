@@ -37,6 +37,7 @@ chmod +x "$WORK/payload/bin/bun"
 
 # 3. 汉化
 python3 "$REPO_ROOT/scripts/apply-zh.py" "$WORK/payload/app/.output" "$REPO_ROOT/i18n/zh.json"
+python3 "$REPO_ROOT/scripts/version-assets.py" "$WORK/payload/app/.output"
 
 # 4. app.tgz
 tar czf "$WORK/fpk/app.tgz" -C "$WORK/payload" app bin ui 2>/dev/null || \
