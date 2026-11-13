@@ -6,5 +6,24 @@
     "homepage": "https://github.com/HUSTHKX/zerobyte-fpk",
     "description": "基于 nicotsx/zerobyte 官方镜像构建的 fnOS 原生包，内置 restic/rclone/shoutrrr，界面中文。"
   },
-  "apps": {}
+  "apps": {
+    "zerobyte": {
+      "display_name": "Zerobyte 加密备份",
+      "version": "0.44.2",
+      "download_url": "https://github.com/HUSTHKX/zerobyte-fpk/releases/download/v0.44.2/zerobyte-x86-0.44.2.fpk",
+      "platform": "x86",
+      "sha256": "94d6702102df844e4ea825d143c861791e64c0a0b67d499afeb1d3e19e9c9c39",
+      "size_bytes": 101893150,
+      "categories": [
+        "备份"
+      ],
+      "desc": "Zerobyte 0.44.2，基于官方镜像构建，中文界面，内置 restic/rclone/shoutrrr。",
+      "homepage": "https://github.com/nicotsx/zerobyte",
+      "bug_report_url": "https://github.com/HUSTHKX/zerobyte-fpk/issues",
+      "maintainer": "HUSTHKX",
+      "distributor": "HUSTHKX",
+      "updated_at": "2026-11-13",
+      "changelog": "基于官方镜像 0.44.2 构建。"
+    }
+  }
 }
