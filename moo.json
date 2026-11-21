@@ -9,21 +9,21 @@
   "apps": {
     "zerobyte": {
       "display_name": "Zerobyte 加密备份",
-      "version": "0.44.2",
-      "download_url": "https://github.com/HUSTHKX/zerobyte-fpk/releases/download/v0.44.2/zerobyte-x86-0.44.2.fpk",
+      "version": "null",
+      "download_url": "https://github.com/HUSTHKX/zerobyte-fpk/releases/download/vnull/zerobyte-x86-null.fpk",
       "platform": "x86",
-      "sha256": "94d6702102df844e4ea825d143c861791e64c0a0b67d499afeb1d3e19e9c9c39",
-      "size_bytes": 101893150,
+      "sha256": "c9fd34112fdbed8c573e62cd2a4b356753cde980fefd85c8be0a82e731337df8",
+      "size_bytes": 101452020,
       "categories": [
         "备份"
       ],
-      "desc": "Zerobyte 0.44.2，基于官方镜像构建，中文界面，内置 restic/rclone/shoutrrr。",
+      "desc": "Zerobyte null，基于官方镜像构建，中文界面，内置 restic/rclone/shoutrrr。",
       "homepage": "https://github.com/nicotsx/zerobyte",
       "bug_report_url": "https://github.com/HUSTHKX/zerobyte-fpk/issues",
       "maintainer": "HUSTHKX",
       "distributor": "HUSTHKX",
-      "updated_at": "2026-11-13",
-      "changelog": "基于官方镜像 0.44.2 构建。"
+      "updated_at": "2026-11-21",
+      "changelog": "基于官方镜像 null 构建。"
     }
   }
 }
